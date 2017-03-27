@@ -233,6 +233,7 @@ public class SearchHelper
         }
 
         return objectString.substring(1);
+        
     }
 
 }
