@@ -1,0 +1,63 @@
+/**
+ * Multipurpose Org Helper Class to get your Org info.
+ * NOTE: Declared as  "without sharing". Mind it before using. 
+**/
+public without sharing class OrgHelper {
+	private static OrgHelper instance;
+	private OrgHelper(){}
+
+	public static OrgHelper getInstance(){
+		if(instance == null)
+			instance = new OrgHelper();
+		return instance;
+	}
+
+	//In all situations where chatter is enabled for the org user is feed enabled for user profiles.
+	public boolean isChatterEnabled(){
+		return Schema.SObjectType.User.isFeedEnabled();
+	}
+	//DatedConversionRate type is only valid for advanced MC orgs
+	public boolean isAdvancedMultiCurrency(){
+		if(UserInfo.isMultiCurrencyOrganization() && SObjectDescribe.getDescribe('DatedConversionRate') != null)
+			return true;
+		return false;
+	}
+
+	public boolean isManagedPackageInstalled(String namespace){
+		boolean result;
+		try{
+			UserInfo.isCurrentUserLicensed(namespace);
+			result = true; //no exception means it is
+		}catch(System.TypeException ex){
+			result = false;
+		}
+		return result;
+	}
+
+	//Returns Current User.
+	public static User getCurrentUser() {
+        User toReturn = [SELECT Id, FirstName, LastName FROM User WHERE Id = :UserInfo.getUserId() LIMIT 1];
+        return toReturn;
+    } 
+    
+    public static Map<String, Schema.DescribeFieldResult> getFieldMetaData(String obj) {
+        Map<String,Schema.DescribeFieldResult> finalMap = new Map<String, Schema.DescribeFieldResult>();
+        Map<String, Schema.SObjectField> objectFields = Schema.getGlobalDescribe().get(obj).getDescribe().fields.getMap();        
+                                              // getting a specific object fields 
+        for(String fieldName: objectFields.keySet()){
+            finalMap.put(fieldName, objectFields.get(fieldName).getDescribe());
+        } 
+        return finalMap;
+    }
+    
+    public static List<String> getRequiredFields(String obj){
+        List<String> requiredFields = new List<String>();
+        Map<String,Schema.DescribeFieldResult> finalMap = getFieldMetaData(obj);
+        for(String fr: finalMap.keySet()){            
+            if(!finalMap.get(fr).isNillable()){
+                requiredFields.add(fr);
+            }
+        }
+        return requiredFields;
+    }
+}
